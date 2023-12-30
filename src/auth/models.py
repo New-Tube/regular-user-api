@@ -4,7 +4,7 @@ from pydantic import BaseModel, constr, field_validator
 class User(BaseModel):
     name: str = ""
     surname: str = ""
-    username: str
+    username: constr(min_length=1, max_length=16)
     password: constr(min_length=8, max_length=16)
 
     @field_validator("username")

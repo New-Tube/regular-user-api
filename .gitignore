@@ -163,3 +163,7 @@ cython_debug/
 .editorconfig
 cache
 send_mail
+
+src/*_pb2.py
+src/*_pb2_grpc.py
+src/*_pb2.pyi

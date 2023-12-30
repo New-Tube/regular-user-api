@@ -8,8 +8,8 @@ from src.auth.models import User
 app = FastAPI()
 
 
-@app.get('/registrate/{username}/{password}/{name}/{surname}')
-async def registrate(username: str, password: str, name: str, surname: str) -> JSONResponse:
+@app.post('/register/{username}/{password}/{name}/{surname}')
+async def register(username: str, password: str, name: str, surname: str) -> JSONResponse:
     try:
         user = User(username=username, password=password, name=name, surname=surname)
         create_user_request = create_user(username, password, name, surname)
@@ -23,12 +23,12 @@ async def registrate(username: str, password: str, name: str, surname: str) -> J
     return JSONResponse(content=response)
 
 
-@app.get('/login/{username}/{password}')
+@app.post('/login/{username}/{password}')
 async def login(username: str, password: str) -> JSONResponse:
     try:
         user = User(username=username, password=password)
         login_user_request = login_user(username, password)
-        if login_user_request["valid"]:
+        if login_user_request["status"]:
             access_token = get_token(username)
             response = {"status": "200", "details": "successful account login", "token": access_token}
         else:
