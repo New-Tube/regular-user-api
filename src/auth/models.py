@@ -1,24 +1,33 @@
-from pydantic import BaseModel, constr, field_validator
+from pydantic import BaseModel
 
 
-class User(BaseModel):
-    name: str = ""
-    surname: str = ""
-    username: constr(min_length=1, max_length=16)
-    password: constr(min_length=8, max_length=16)
+class UserRegistrionRequest(BaseModel):
+    username: str
+    password: str
+    name: str | None = None
+    surname: str | None = None
 
-    @field_validator("username")
-    @classmethod
-    def validate_username(cls, value: str):
-        username_length = len(value)
-        if username_length < 1 or username_length > 16:
-            raise ValueError("The username must be between 1 and 16 characters long")
-        return value
 
-    @field_validator("password")
-    @classmethod
-    def validate_email(cls, value: str) -> str:
-        password_length = len(value)
-        if password_length < 8 or password_length > 16:
-            raise ValueError("The password must be between 8 and 16 characters long")
-        return value
+class UserLoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: str | None = None
+
+
+class OAuthUser(BaseModel):
+    username: str
+    email: str | None = None
+    full_name: str | None = None
+    disabled: bool | None = None
+
+
+class UserInDB(UserRegistrionRequest):
+    hashed_password: str

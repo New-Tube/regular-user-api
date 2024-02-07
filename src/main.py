@@ -1,38 +1,80 @@
-from fastapi import FastAPI
+from datetime import timedelta
 
+from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import JSONResponse
 
-from src.auth.utils import login_user, create_user, get_token
-from src.auth.models import User
+import auth.models
+import auth.utils
+import core.config
+
 
 app = FastAPI()
 
 
-@app.post('/register/{username}/{password}/{name}/{surname}')
-async def register(username: str, password: str, name: str, surname: str) -> JSONResponse:
+@app.post("/register")
+async def register(user: auth.models.UserRegistrionRequest):
     try:
-        user = User(username=username, password=password, name=name, surname=surname)
-        create_user_request = create_user(username, password, name, surname)
+        # TODO: Validation
+        create_user_request = auth.utils.create_user(user)
         if create_user_request["status"]:
-            access_token = get_token(username)
-            response = {"status": "200", "details": "successful registrate", "token": access_token}
+            access_token = auth.utils.get_token(user.username)
+            response = {
+                "status": "200",
+                "details": "successful registration",
+                "token": access_token,
+            }
+            core.config.stub.create_user(user)
         else:
-            response = {"status": "400", "details": create_user_request["details"]}
+            response = {
+                "status": "400",
+                "details": create_user_request["details"],
+            }
     except ValueError as e:
-        response = {"status": "400", "details": e.errors()[0]["msg"]}
-    return JSONResponse(content=response)
+        response = {"status": "400", "details": e}
+    return response
 
 
-@app.post('/login/{username}/{password}')
-async def login(username: str, password: str) -> JSONResponse:
+@app.post("/login")
+async def login(user: auth.models.UserLoginRequest):
     try:
-        user = User(username=username, password=password)
-        login_user_request = login_user(username, password)
+        login_user_request = auth.utils.login_user(user)
         if login_user_request["status"]:
-            access_token = get_token(username)
-            response = {"status": "200", "details": "successful account login", "token": access_token}
+            access_token_expires = timedelta(
+                minutes=core.config.ACCESS_TOKEN_EXPIRE_MINUTES,
+            )
+            access_token = auth.utils.create_access_token(
+                data={"sub": user.username},
+                expires_delta=access_token_expires,
+            )
+            response = {
+                "status": "200",
+                "details": "successful account login",
+                "token": access_token,
+            }
         else:
-            response = {"status": "400", "details": login_user_request["details"]}
+            response = {
+                "status": "400",
+                "details": login_user_request["details"],
+            }
     except ValueError as e:
         response = {"status": "400", "details": e.errors()[0]["msg"]}
     return JSONResponse(content=response)
+
+
+@app.post("/token")
+async def login_for_access_token(
+    form_data: auth.utils.form_data,
+) -> auth.models.Token:
+    user = auth.utils.authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(
+        minutes=core.config.ACCESS_TOKEN_EXPIRE_MINUTES,
+    )
+    return auth.utils.create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires,
+    )
