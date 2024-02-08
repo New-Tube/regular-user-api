@@ -23,21 +23,21 @@ class StubGenerator:
         return comment_pb2_grpc.CommentStub(self.get_channel())
 
     def get_video_creator_stub(self):
-        return video_creator_pb2_grpc.VideoCreatorStub(self.get_channel())
+        return video_creator_pb2_grpc.VideoCreatorUserStub(self.get_channel())
 
     def get_video_regulat_stub(self):
         return video_regular_pb2_grpc.VideoRegularUserStub(self.get_channel())
 
-    def get_user(self, username=None, id=None):
-        return self.get_user_stub().GetUser(
-            user_pb2.UserRequest(ID=id, Nickname=username),
+    def get_user(self, username=None):
+        return self.get_user_stub().Get(
+            user_pb2.UserRequest(Nickname=username),
         )
 
     def create_user(self, user: auth.models.UserRegistrionRequest):
         return self.get_user_stub().Create(
             user_pb2.UserCreateRequest(
                 Nickname=user.username,
-                PasswordHash=int(auth.utils.get_password_hash(user.password)),
+                PasswordHash=auth.utils.get_password_hash(user.password),
                 Name=user.name,
                 Surname=user.surname,
             ),

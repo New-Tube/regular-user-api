@@ -1,24 +1,16 @@
 from datetime import datetime, timedelta
-from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from Crypto.Hash import BLAKE2s
+from fastapi import HTTPException, status
 from jose import jwt, JWTError
-from passlib.context import CryptContext
 
 from auth import models
 from core.config import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     ALGORITHM,
     SECRET_KEY,
+    stub,
 )
-
-
-form_data = Annotated[OAuth2PasswordRequestForm, Depends()]
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def login_user(user: models.UserLoginRequest) -> dict:
@@ -52,30 +44,43 @@ def get_token(username: str) -> jwt:
 
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    return get_password_hash(plain_password) == hashed_password
 
 
 def get_password_hash(password):
-    return pwd_context.hash(password)
+    return int.from_bytes(
+        BLAKE2s.new(
+            data=password.encode("ascii"),
+            digest_bits=32).digest(),
+        "big",
+    )
 
 
-def get_user(username: str):
-    # if username in db:
-    #     user_dict = db[username]
-    #     return UserInDB(**user_dict)
-    return
+def get_user(username: str) -> models.UserInDB:
+    if user := stub.get_user(username=username):
+        return models.UserInDB(
+            ID=user.ID,
+            Nickname=user.Nickname,
+            Name=user.Name,
+            Surname=user.Surname,
+            PasswordHash=user.PasswordHash,
+            EditedAt=user.EditedAt,
+            CreatedAt=user.CreatedAt,
+        )
+
+    return None
 
 
-def authenticate_user(username: str, password: str):
-    user = get_user(username)
+def authenticate_user(request: models.UserLoginRequest):
+    user = get_user(request.username)
     if not user:
         return False
-    if not verify_password(password, user.hashed_password):
+    if not verify_password(request.password, user.PasswordHash):
         return False
     return user
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+async def get_current_user(token: str):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
