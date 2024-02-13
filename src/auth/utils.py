@@ -17,7 +17,9 @@ def login_user(user: models.UserLoginRequest) -> dict:
     return {"status": True, "details": ""}
 
 
-def create_user(user: models.UserRegistrionRequest) -> dict:
+def create_user_request(user: models.UserRegistrionRequest) -> dict:
+    if stub.get_user(username=user.username):
+        return {"status": False, "details": "username already exist"}
     return {"status": True, "details": ""}
 
 

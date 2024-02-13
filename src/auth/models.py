@@ -1,19 +1,43 @@
-from pydantic import BaseModel
+import pydantic
 
 
-class UserRegistrionRequest(BaseModel):
+class UserRegistrionRequest(pydantic.BaseModel):
     username: str
     password: str
     name: str | None = None
     surname: str | None = None
 
+    @pydantic.field_validator("username")
+    @classmethod
+    def check_username(cls, v: str, info: pydantic.ValidationInfo) -> str:
+        assert isinstance(v, str), f"{info.field_name} is not a string"
+        assert v.isascii(), f"{info.field_name} must be ascii"
+        assert 4 < len(v) < 40, f"{info.field_name} len must be > 4 and < 40"
+        assert not v.isnumeric(), (
+            f"{info.field_name} must ",
+            "contain non numeric symbols",
+        )
+        return v
 
-class UserLoginRequest(BaseModel):
+    @pydantic.field_validator("username")
+    @classmethod
+    def check_password(cls, v: str, info: pydantic.ValidationInfo) -> str:
+        assert isinstance(v, str), f"{info.field_name} is not a string"
+        assert v.isascii(), f"{info.field_name} must be ascii"
+        assert 4 < len(v) < 100, f"{info.field_name} len must be > 4 and < 100"
+        assert not v.isnumeric(), (
+            f"{info.field_name} must ",
+            "contain non numeric symbols",
+        )
+        return v
+
+
+class UserLoginRequest(pydantic.BaseModel):
     username: str
     password: str
 
 
-class Token(BaseModel):
+class Token(pydantic.BaseModel):
     access_token: str
     token_type: str
 
@@ -24,18 +48,18 @@ class Token(BaseModel):
     #     }
 
 
-class TokenData(BaseModel):
+class TokenData(pydantic.BaseModel):
     username: str | None = None
 
 
-class User(BaseModel):
+class User(pydantic.BaseModel):
     username: str
     email: str | None = None
     full_name: str | None = None
     disabled: bool | None = None
 
 
-class UserInDB(BaseModel):
+class UserInDB(pydantic.BaseModel):
     ID: int
     Name: str
     Surname: str

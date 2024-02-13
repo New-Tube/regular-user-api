@@ -12,7 +12,7 @@ app = FastAPI()
 async def register(user: auth.models.UserRegistrionRequest):
     try:
         # TODO: Validation
-        create_user_request = auth.utils.create_user(user)
+        create_user_request = auth.utils.create_user_request(user)
         if create_user_request["status"]:
             access_token = auth.utils.get_token(user.username)
             response = {
